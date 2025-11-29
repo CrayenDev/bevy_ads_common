@@ -7,6 +7,7 @@ homepage = "https://github.com/crayendev/bevy_ads_common"
 authors = ["Piotr Siuszko <siuszko@zoho.com>"]
 version = "0.1.0"
 license = "MIT OR Apache-2.0"
+include = ["*.rs"]
 keywords = ["bevy", "ads", "plugin"]
 
 [features]
