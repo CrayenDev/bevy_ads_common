@@ -138,13 +138,12 @@ impl MockupAdsSystem<'_, '_> {
         let auto_close = settings.auto_close;
         let duration = settings.duration_ms;
         let mut ss = match &settings.display {
-            AdDisplay::SolidBackground(background_color) => self.cmd.spawn((
-                ad_bundle(duration, ad_type, auto_close),
-                background_color.clone(),
-            )),
+            AdDisplay::SolidBackground(background_color) => self
+                .cmd
+                .spawn((ad_bundle(duration, ad_type, auto_close), *background_color)),
             AdDisplay::SolidBackgroundWithText(background_color, text) => self.cmd.spawn((
                 ad_bundle(duration, ad_type, auto_close),
-                background_color.clone(),
+                *background_color,
                 children![Text::new(text)],
             )),
             AdDisplay::Image(handle) => self.cmd.spawn((
@@ -221,7 +220,7 @@ impl AdManager for MockupAdsSystem<'_, '_> {
 
 fn show_ads(
     mut q: Query<(Entity, &mut MockupAdComponent, &MockupAdType)>,
-    mut qq: Query<(&mut Text, &MockupAdTimeLeftText)>,
+    mut qq: Query<&mut Text, With<MockupAdTimeLeftText>>,
     time: Res<Time>,
     mut commands: Commands,
     cfg: Res<MockupAds>,
@@ -241,10 +240,8 @@ fn show_ads(
                 commands.spawn((close_btn(), ChildOf(entity)));
             }
         } else {
-            for (mut text, ad_text) in qq.iter_mut() {
-                if ad_text.0 {
-                    text.0 = format!("{:.2}s left", component.timer.remaining_secs());
-                }
+            for mut text in qq.iter_mut() {
+                text.0 = format!("{:.2}s left", component.timer.remaining_secs());
             }
         }
     }

@@ -14,8 +14,8 @@ mod mockup;
 pub mod prelude {
     #[cfg(feature = "mockup")]
     pub use crate::mockup::{
-        AdDisplay, AdDisplaySettings, MockupAdComponent, MockupAdText, MockupAdType, MockupAds,
-        MockupAdsSystem,
+        AdDisplay, AdDisplaySettings, MockupAdComponent, MockupAdTimeLeftText, MockupAdType,
+        MockupAds, MockupAdsSystem,
     };
     pub use crate::{AdManager, AdMessage, AdType, AdsCommonPlugin};
 }
