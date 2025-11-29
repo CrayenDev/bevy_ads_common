@@ -1,0 +1,30 @@
+[package]
+name = "bevy_ads_common"
+description = "Basic crate for Bevy game engine ads integration."
+edition = "2024"
+repository = "https://github.com/crayendev/bevy_ads_common.git"
+homepage = "https://github.com/crayendev/bevy_ads_common"
+authors = ["Piotr Siuszko <siuszko@zoho.com>"]
+version = "0.1.0"
+license = "MIT OR Apache-2.0"
+keywords = ["bevy", "ads", "plugin"]
+
+[features]
+default = []
+mockup = ["dep:bevy_ui", "dep:bevy_color", "dep:bevy_time", "dep:bevy_image", "dep:bevy_asset", "dep:bevy_picking"]
+
+[dependencies]
+serde = {version = "1.0.152", features = ["derive"]}
+bevy_app = { version = "0.17.0" }
+bevy_ecs = { version = "0.17.0" }
+bevy_reflect = { version = "0.17.0" }
+bevy_color = { version = "0.17", optional = true }
+bevy_ui = { version = "0.17", optional = true }
+bevy_time = { version = "0.17", optional = true }
+bevy_asset = { version = "0.17", optional = true }
+bevy_image = { version = "0.17", optional = true }
+bevy_picking = { version = "0.17", optional = true }
+bevy_derive = { version = "0.17.0" }
+bevy_log = { version = "0.17.0" }
+once_cell = "1"
+crossbeam = "0.8"
