@@ -93,7 +93,7 @@ impl MockupFakeLoader {
             timer.tick(time.delta());
             if timer.just_finished() {
                 crate::write_event_to_queue(AdMessage::AdLoaded {
-                    ad_type: AdType::Rewarded.to_string(),
+                    ad_type: AdType::Rewarded,
                 });
             }
         }
@@ -101,7 +101,7 @@ impl MockupFakeLoader {
             timer.tick(time.delta());
             if timer.just_finished() {
                 crate::write_event_to_queue(AdMessage::AdLoaded {
-                    ad_type: AdType::Interstitial.to_string(),
+                    ad_type: AdType::Interstitial,
                 });
             }
         }
@@ -374,7 +374,7 @@ fn on_despawn(
         bevy_log::warn!("Failed to get component info");
         return;
     };
-    let ad_type = ad_type_component.to_string();
+    let ad_type = **ad_type_component;
     crate::write_event_to_queue(AdMessage::AdClosed { ad_type });
     if let Some(mut timer) = timer {
         timer.reset(ad_type_component.0);

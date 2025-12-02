@@ -81,13 +81,16 @@ fn on_message(
     mut q: Query<(&mut AdMessagesHolder, &mut Text)>,
     mut btn_texts: Query<&mut Text, (With<AdButtonText>, Without<AdMessagesHolder>)>,
     mut q2: Query<&mut Visibility, With<Button>>,
+    time: Res<Time>,
 ) {
     for message in messages.read() {
         for (mut ad_messages, mut text) in q.iter_mut() {
-            ad_messages.0.push(format!("{:?}", message));
+            ad_messages
+                .0
+                .push(format!("{:.2}s: {:?}", time.elapsed_secs(), message));
             text.0.clear();
             text.0.push_str("Ads events:\n");
-            for mes in ad_messages.0.iter() {
+            for mes in ad_messages.0.iter().rev() {
                 text.0.push_str(mes);
                 text.0.push('\n');
             }
