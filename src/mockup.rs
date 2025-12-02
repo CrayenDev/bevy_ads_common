@@ -1,6 +1,6 @@
 //! Mockup implementation of the AdManager trait.
 //! Implements the AdManager trait for testing purposes.
-use bevy_app::{App, Update};
+use bevy_app::{App, PostStartup, Update};
 use bevy_derive::Deref;
 use bevy_ecs::{
     bundle::Bundle,
@@ -13,12 +13,13 @@ use bevy_ecs::{
     prelude::{ReflectComponent, ReflectResource},
     query::With,
     resource::Resource,
+    schedule::{IntoScheduleConfigs, common_conditions::resource_exists},
     spawn::SpawnRelated,
     system::{Commands, In, Query, Res, ResMut, SystemParam},
 };
 use bevy_picking::events::{Click, Pointer};
 use bevy_reflect::Reflect;
-use bevy_time::{Time, TimerMode};
+use bevy_time::{Time, Timer, TimerMode};
 use bevy_ui::{
     AlignItems, BackgroundColor, FlexDirection, JustifyContent, JustifyItems, Node, PositionType,
     Val,
@@ -35,6 +36,76 @@ pub struct MockupAds {
     pub rewarded: AdDisplaySettings,
     pub interstitial: AdDisplaySettings,
     pub rewarded_ad_reward: Reward,
+    pub loading_time_ms: u64,
+}
+
+#[derive(Debug, Reflect, Resource, Default)]
+#[reflect(Resource)]
+pub struct MockupFakeLoader {
+    duration: Duration,
+    rewarded: Option<Timer>,
+    interstitial: Option<Timer>,
+}
+
+impl MockupFakeLoader {
+    pub fn set_duration(&mut self, duration: Duration) {
+        self.duration = duration;
+        self.interstitial = None;
+        self.rewarded = None;
+    }
+    pub fn is_loaded(&self, ad_type: AdType) -> bool {
+        match ad_type {
+            AdType::Rewarded => self
+                .rewarded
+                .as_ref()
+                .is_some_and(|timer| timer.is_finished()),
+            AdType::Interstitial => self
+                .interstitial
+                .as_ref()
+                .is_some_and(|timer| timer.is_finished()),
+            _ => true,
+        }
+    }
+    pub fn start_load(&mut self, ad_type: AdType) {
+        match ad_type {
+            AdType::Rewarded => {
+                self.rewarded = Some(Timer::new(self.duration, TimerMode::Once));
+            }
+            AdType::Interstitial => {
+                self.interstitial = Some(Timer::new(self.duration, TimerMode::Once));
+            }
+            _ => {}
+        }
+    }
+    fn reset(&mut self, ad_type: AdType) {
+        match ad_type {
+            AdType::Rewarded => {
+                self.rewarded = None;
+            }
+            AdType::Interstitial => {
+                self.interstitial = None;
+            }
+            _ => {}
+        }
+    }
+    fn update(mut loader: ResMut<MockupFakeLoader>, time: Res<Time>) {
+        if let Some(ref mut timer) = loader.rewarded {
+            timer.tick(time.delta());
+            if timer.just_finished() {
+                crate::write_event_to_queue(AdMessage::AdLoaded {
+                    ad_type: AdType::Rewarded.to_string(),
+                });
+            }
+        }
+        if let Some(ref mut timer) = loader.interstitial {
+            timer.tick(time.delta());
+            if timer.just_finished() {
+                crate::write_event_to_queue(AdMessage::AdLoaded {
+                    ad_type: AdType::Interstitial.to_string(),
+                });
+            }
+        }
+    }
 }
 
 #[derive(Debug, Reflect, Clone)]
@@ -48,9 +119,10 @@ pub struct AdDisplaySettings {
 impl Default for AdDisplaySettings {
     fn default() -> Self {
         Self {
-            display: AdDisplay::SolidBackground(BackgroundColor(
-                bevy_color::palettes::tailwind::ZINC_100.into(),
-            )),
+            display: AdDisplay::SolidBackgroundWithText(
+                BackgroundColor(bevy_color::palettes::tailwind::ZINC_500.into()),
+                "Displaying an ad".to_string(),
+            ),
             show_time_left: true,
             auto_close: false,
             duration_ms: 3500,
@@ -88,10 +160,11 @@ pub enum AdDisplay {
 impl Default for MockupAds {
     fn default() -> Self {
         Self {
-            initialized: true,
+            initialized: false,
             interstitial: AdDisplaySettings::default(),
             rewarded: AdDisplaySettings::default(),
             rewarded_ad_reward: Reward::default(),
+            loading_time_ms: 1000,
         }
     }
 }
@@ -99,11 +172,22 @@ impl Default for MockupAds {
 pub(crate) fn plugin(app: &mut App) {
     app.register_type::<MockupAds>()
         .init_resource::<MockupAds>()
+        .register_type::<MockupFakeLoader>()
+        .init_resource::<MockupFakeLoader>()
         .register_type::<MockupAdComponent>()
         .register_type::<MockupAdType>()
         .add_systems(Update, show_ads)
+        .add_systems(
+            Update,
+            MockupFakeLoader::update.run_if(resource_exists::<MockupFakeLoader>),
+        )
+        .add_systems(PostStartup, init)
         .add_observer(on_despawn)
         .add_observer(close_clicked);
+}
+
+fn init(mut ads: MockupAdsSystem) {
+    ads.initialize();
 }
 
 #[derive(Component, Reflect)]
@@ -125,10 +209,17 @@ pub struct MockupAdTimeLeftText;
 pub struct MockupAdsSystem<'w, 's> {
     pub r: ResMut<'w, MockupAds>,
     pub cmd: Commands<'w, 's>,
+    pub timer: ResMut<'w, MockupFakeLoader>,
 }
 
 impl MockupAdsSystem<'_, '_> {
     pub fn show_fullscreen_ad(&mut self, ad_type: AdType) -> bool {
+        if !self.is_initialized() {
+            return false;
+        }
+        if !self.timer.is_loaded(ad_type) {
+            return false;
+        }
         let settings = match ad_type {
             AdType::Banner => return false,
             AdType::Interstitial => &self.r.interstitial,
@@ -164,7 +255,14 @@ impl AdManager for MockupAdsSystem<'_, '_> {
     }
 
     fn initialize(&mut self) -> bool {
+        if self.r.initialized {
+            return true;
+        }
+        self.timer
+            .set_duration(Duration::from_millis(self.r.loading_time_ms));
+
         self.r.initialized = true;
+        crate::write_event_to_queue(AdMessage::Initialized { success: true });
         true
     }
 
@@ -202,19 +300,27 @@ impl AdManager for MockupAdsSystem<'_, '_> {
     }
 
     fn load_interstitial(&mut self, _ad_id: &str) -> bool {
+        self.timer.start_load(AdType::Interstitial);
         true
     }
 
     fn load_rewarded(&mut self, _ad_id: &str) -> bool {
+        self.timer.start_load(AdType::Rewarded);
         true
     }
 
     fn is_interstitial_ready(&self) -> bool {
-        true
+        if !self.is_initialized() {
+            return false;
+        }
+        self.timer.is_loaded(AdType::Interstitial)
     }
 
     fn is_rewarded_ready(&self) -> bool {
-        true
+        if !self.is_initialized() {
+            return false;
+        }
+        self.timer.is_loaded(AdType::Rewarded)
     }
 }
 
@@ -259,13 +365,20 @@ fn hide_ad(In(ad_type): In<AdType>, mut commands: Commands, q: Query<(Entity, &M
     }
 }
 
-fn on_despawn(t: On<Remove, MockupAdType>, q: Query<&MockupAdType>) {
+fn on_despawn(
+    t: On<Remove, MockupAdType>,
+    q: Query<&MockupAdType>,
+    timer: Option<ResMut<MockupFakeLoader>>,
+) {
     let Ok(ad_type_component) = q.get(t.entity) else {
         bevy_log::warn!("Failed to get component info");
         return;
     };
     let ad_type = ad_type_component.to_string();
     crate::write_event_to_queue(AdMessage::AdClosed { ad_type });
+    if let Some(mut timer) = timer {
+        timer.reset(ad_type_component.0);
+    }
 }
 
 fn ad_bundle(duration_ms: u64, ad_type: AdType, auto_close: bool) -> impl Bundle {
@@ -279,7 +392,6 @@ fn ad_bundle(duration_ms: u64, ad_type: AdType, auto_close: bool) -> impl Bundle
             flex_direction: FlexDirection::Column,
             row_gap: Val::Px(10.0),
             position_type: PositionType::Absolute,
-
             ..Default::default()
         },
         MockupAdComponent {
