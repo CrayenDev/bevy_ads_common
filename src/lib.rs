@@ -58,15 +58,22 @@ pub enum AdType {
     Rewarded,
 }
 
+/// Error type for parsing ad type.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Reflect)]
+pub enum ParsingAdTypeError {
+    /// Invalid value error.
+    InvalidValue,
+}
+
 impl TryFrom<&str> for AdType {
-    type Error = String;
+    type Error = ParsingAdTypeError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             "banner" | "Banner" => Ok(AdType::Banner),
             "interstitial" | "Interstitial" => Ok(AdType::Interstitial),
             "rewarded" | "Rewarded" => Ok(AdType::Rewarded),
-            _ => Err(format!("Invalid ad type: {}", value)),
+            _ => Err(ParsingAdTypeError::InvalidValue),
         }
     }
 }
