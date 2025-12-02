@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0
+
+### Added
+
+- Improved mockup feature
+- Example usage of the library
+
+### Changed
+
+- changed `ad_type` fields types in `AdMessage` enum from `String` to `AdType`
+
 ## 0.1.1
 
 ### Fixed

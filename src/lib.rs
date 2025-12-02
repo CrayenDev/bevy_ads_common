@@ -36,13 +36,13 @@ pub enum AdMessage {
     /// Consent was gathered.
     ConsentGathered { success: bool, error: String },
     /// Ad was loaded.
-    AdLoaded { ad_type: String },
+    AdLoaded { ad_type: AdType },
     /// Ad failed to load.
-    AdFailedToLoad { ad_type: String, error: String },
+    AdFailedToLoad { ad_type: AdType, error: String },
     /// Ad was opened.
-    AdOpened { ad_type: String },
+    AdOpened { ad_type: AdType },
     /// Ad was closed.
-    AdClosed { ad_type: String },
+    AdClosed { ad_type: AdType },
     /// Rewarded ad earned reward.
     RewardedAdEarnedReward { amount: i32, reward_type: String },
 }
@@ -56,6 +56,19 @@ pub enum AdType {
     Interstitial,
     /// Rewarded ad type
     Rewarded,
+}
+
+impl TryFrom<&str> for AdType {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "banner" | "Banner" => Ok(AdType::Banner),
+            "interstitial" | "Interstitial" => Ok(AdType::Interstitial),
+            "rewarded" | "Rewarded" => Ok(AdType::Rewarded),
+            _ => Err(format!("Invalid ad type: {}", value)),
+        }
+    }
 }
 
 impl Display for AdType {
