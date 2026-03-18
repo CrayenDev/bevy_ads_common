@@ -1,16 +1,14 @@
 # Changelog
 
-## Unreleased
-
-### Added
-
-- new `AdMessage` - `AdFailedToPresent`
-
 ## 0.3.0
 
 ### Changed
 
 - Updated to Bevy 0.18
+
+### Added
+
+- new `AdMessage` - `AdFailedToPresent`
 
 ## 0.2.0
 
