@@ -1,5 +1,6 @@
 //! Mockup implementation of the AdManager trait.
 //! Implements the AdManager trait for testing purposes.
+
 use bevy_app::{App, PostStartup, Update};
 use bevy_derive::Deref;
 use bevy_ecs::{
@@ -14,7 +15,6 @@ use bevy_ecs::{
     query::With,
     resource::Resource,
     schedule::{IntoScheduleConfigs, common_conditions::resource_exists},
-    spawn::SpawnRelated,
     system::{Commands, In, Query, Res, ResMut, SystemParam},
 };
 use bevy_picking::events::{Click, Pointer};
