@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- new `AdMessage` - `AdFailedToPresent`
+
 ## 0.3.0
 
 ### Changed

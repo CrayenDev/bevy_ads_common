@@ -39,6 +39,8 @@ pub enum AdMessage {
     AdLoaded { ad_type: AdType },
     /// Ad failed to load.
     AdFailedToLoad { ad_type: AdType, error: String },
+    /// A loaded ad failed to present (e.g. another fullscreen ad is already showing).
+    AdFailedToPresent { ad_type: AdType, error: String },
     /// Ad was opened.
     AdOpened { ad_type: AdType },
     /// Ad was closed.
