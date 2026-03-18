@@ -46,11 +46,10 @@ fn setup(mut commands: Commands) {
                         height: Val::Px(50.0),
                         justify_content: JustifyContent::Center,
                         justify_items: JustifyItems::Stretch,
-
+                        border_radius: BorderRadius::all(Val::Px(10.0)),
                         align_items: AlignItems::Center,
                         ..Default::default()
                     },
-                    BorderRadius::all(Val::Px(10.0)),
                     BackgroundColor(color::palettes::tailwind::AMBER_400.into()),
                     Button,
                     children![(Text::new("Load Ad"), AdButtonText)]
