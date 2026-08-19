@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+### Changed
+
+- Updated to Bevy 0.19
+
 ## 0.3.0
 
 ### Changed
